@@ -1,0 +1,6 @@
+{
+    "name": "Keyboard",
+    "price": 421.91,
+    "sku": 912,
+    "description": "I'll reboot the optical RAM interface, that should circuit the XSS card!"
+}

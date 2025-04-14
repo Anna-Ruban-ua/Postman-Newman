@@ -1,0 +1,15 @@
+let thisResponseTime = pm.response.responseTime;
+let statusCode = pm.response.code;
+let header = pm.response.headers;
+
+pm.test("Response time is less than 200ms", () => {
+    pm.expect(thisResponseTime).to.be.below(200);
+});
+
+pm.test("Status code is 2XX", () => {
+    pm.expect(statusCode).to.be.within(200, 299);
+});
+
+pm.test("Content-Type is present", () => {
+    pm.expect(header.has("Content-Type")).to.be.true;
+});
