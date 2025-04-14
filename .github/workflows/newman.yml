@@ -1,0 +1,57 @@
+name: Run Newman Tests and Publish Allure Report
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+jobs:
+  test-and-report:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Start YAML mock server (in background)
+      run: npm run tern-on-api &
+
+    - name: Install Newman + Allure Reporter
+      run: |
+        npm install -g newman newman-reporter-allure
+
+    - name: Get Allure history
+      uses: actions/checkout@v4
+      if: always()
+      continue-on-error: true
+      with:
+        ref: gh-pages
+        path: gh-pages
+
+    - name: Run Newman tests with Allure report
+      run: |
+        newman run store.collection.json \
+          --reporters cli,allure \
+          --reporter-allure-export newman/allure-results
+
+    - name: Generate Allure report with history
+      uses: simple-elf/allure-report-action@master
+      with:
+        allure_results: allure-results
+        allure_history: allure-history
+        keep_reports: 20
+
+    - name: Deploy report to Github Pages
+      if: always()
+      uses: peaceiris/actions-gh-pages@v2
+      env:
+        PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PUBLISH_BRANCH: gh-pages
+        PUBLISH_DIR: allure-history

@@ -1,0 +1,1255 @@
+{
+	"info": {
+		"_postman_id": "6e6a4467-5021-47d3-9812-bf5114eca2e4",
+		"name": "store",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39953540"
+	},
+	"item": [
+		{
+			"name": "Products",
+			"item": [
+				{
+					"name": "List products",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const productsData = pm.response.json();\r",
+									"const Ajv = require('ajv');\r",
+									"const ajv = new Ajv({ allErrors: true });\r",
+									"const schema = {\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"},\"price\":{\"type\":\"number\"},\"sku\":{\"type\":\"integer\"},\"description\":{\"type\":\"string\"}}};\r",
+									"\r",
+									"pm.test(\"Schema is valid\", () => {\r",
+									"    const validate = ajv.compile(schema);\r",
+									"    productsData.forEach(item => {\r",
+									"        const valid = validate(item);\r",
+									"        pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;\r",
+									"    });\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List products pagination",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const products = pm.response.json();",
+									"const pageSize = Number(pm.request.url.query.get('pageSize'));",
+									"",
+									"pm.test(\"Products are an array\", () => {",
+									"  pm.expect(products).to.be.an(\"array\");",
+									"});",
+									"",
+									"pm.test(`Returns max ${pageSize} products`, () => {",
+									"  pm.expect(products.length).to.be.at.most(pageSize);",
+									"});",
+									"",
+									"pm.test(\"Each product has a name\", () => {",
+									"  products.forEach(p => {",
+									"    pm.expect(p).to.have.property(\"name\");",
+									"  });",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products?page=1&pageSize=2",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "2"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List products sorting",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const products = pm.response.json();\r",
+									"const sortKey = pm.request.url.query.get('sortKey');\r",
+									"const sortOrder = pm.request.url.query.get('sortOrder');\r",
+									"\r",
+									"pm.test(`Products are sorted by ${sortKey} ${sortOrder}`, () => {\r",
+									"  for (let i = 1; i < products.length; i++) {\r",
+									"    const prev = products[i - 1][sortKey];\r",
+									"    const curr = products[i][sortKey];\r",
+									"\r",
+									"    if (sortOrder === \"ASC\") {\r",
+									"      pm.expect(prev).to.be.at.most(curr);\r",
+									"    } else {\r",
+									"      pm.expect(prev).to.be.at.least(curr);\r",
+									"    }\r",
+									"  }\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products?sortKey=price&sortOrder=ASC",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							],
+							"query": [
+								{
+									"key": "sortKey",
+									"value": "price"
+								},
+								{
+									"key": "sortOrder",
+									"value": "ASC"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"const productsData = pm.response.json();",
+									"pm.environment.set(\"productId\", productsData.id); ",
+									"const Ajv = require('ajv');",
+									"const ajv = new Ajv({ allErrors: true });",
+									"const schema = {\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"},\"price\":{\"type\":\"number\"},\"sku\":{\"type\":\"integer\"},\"description\":{\"type\":\"string\"}}};",
+									"",
+									"pm.test(\"POST response matches schema\", () => {",
+									"    const validate = ajv.compile(schema);",
+									"    const valid = validate(productsData);",
+									"    pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"{{$randomProduct}}\",\r\n    \"price\": {{$randomPrice}},\r\n    \"sku\": {{$randomInt}},\r\n    \"description\": \"{{$randomPhrase}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get product by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const productsData = pm.response.json();",
+									"const Ajv = require('ajv');",
+									"const ajv = new Ajv({ allErrors: true });",
+									"const schema = {\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"},\"price\":{\"type\":\"number\"},\"sku\":{\"type\":\"integer\"},\"description\":{\"type\":\"string\"}}};",
+									"",
+									"pm.test(\"Schema is valid\", () => {",
+									"    const validate = ajv.compile(schema);",
+									"    const valid = validate(productsData);",
+									"    pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products/{{productId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products",
+								"{{productId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update product",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const productsData = pm.response.json();",
+									"const Ajv = require('ajv');",
+									"const ajv = new Ajv({ allErrors: true });",
+									"const schema = {\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"},\"price\":{\"type\":\"number\"},\"sku\":{\"type\":\"integer\"},\"description\":{\"type\":\"string\"}}};",
+									"",
+									"pm.environment.set(\"expectedName\", productsData.name);",
+									"pm.environment.set(\"expectedPrice\", productsData.price);",
+									"pm.environment.set(\"expectedSku\", productsData.sku);",
+									"pm.environment.set(\"expectedDescription\", productsData.description);",
+									"",
+									"pm.test(\"Schema is valid\", () => {",
+									"    const validate = ajv.compile(schema);",
+									"    const valid = validate(productsData);",
+									"    pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Values are correct via GET\", (done) => {",
+									"  const url = pm.variables.replaceIn(\"{{baseUrl}}/products/{{productId}}\");",
+									"  const expectedName = pm.environment.get(\"expectedName\");",
+									"  const expectedPrice = pm.environment.get(\"expectedPrice\");",
+									"  const expectedSku = pm.environment.get(\"expectedSku\");",
+									"  const expectedDescription = pm.environment.get(\"expectedDescription\");",
+									"",
+									"  pm.sendRequest({ url, method: \"GET\" }, (_, res) => {",
+									"    const actual = res.json();",
+									"    pm.expect(res.json().name).to.eql(expectedName);",
+									"    pm.expect(actual.price).to.eql(parseFloat(expectedPrice));",
+									"    pm.expect(actual.sku).to.eql(parseInt(expectedSku));",
+									"    pm.expect(actual.description).to.eql(expectedDescription);",
+									"    done();",
+									"  });",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": {{productId}},\r\n    \"name\": \"{{$randomProduct}}\",\r\n    \"price\": {{$randomPrice}},\r\n    \"sku\": {{$randomInt}},\r\n    \"description\": \"{{$randomPhrase}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove product by ID",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const url = pm.variables.replaceIn(\"{{baseUrl}}/products/{{productId}}\");",
+									"",
+									"pm.test(\"Deleted item returns 404\", (done) => {",
+									"  pm.sendRequest({ url, method: \"GET\" }, (_, res) => {",
+									"    pm.expect(res.code).to.eql(404);",
+									"    done();",
+									"  });",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products/{{productId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products",
+								"{{productId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "List orders",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const orders = pm.response.json();",
+									"const Ajv = require('ajv');",
+									"const ajv = new Ajv({ allErrors: true });",
+									"const schema = {\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"},\"sku\":{\"type\":\"integer\"}}};",
+									"",
+									"pm.test('Schema is valid', () => {",
+									"    const validate = ajv.compile(schema);",
+									"    orders.forEach(o => {",
+									"        const valid = validate(o);",
+									"        pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;",
+									"    });",
+									"}); "
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List orders pagination",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const orders = pm.response.json();",
+									"const pageSize = Number(pm.request.url.query.get('pageSize'));",
+									"",
+									"pm.test('Orders are an array', () => {",
+									"    pm.expect(orders).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(`Returns max ${pageSize} orders`, () => {",
+									"    pm.expect(orders.length).to.be.at.most(pageSize);",
+									"});",
+									"",
+									"pm.test('Each order has an ID', () => {",
+									"    orders.forEach(o => {",
+									"        pm.expect(o).to.have.property('id');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders?page=1&pageSize=2",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "2"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List orders sorting",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const orders = pm.response.json();",
+									"const sortKey = pm.request.url.query.get('sortKey');",
+									"const sortOrder = pm.request.url.query.get('sortOrder');",
+									"",
+									"pm.test(`Orders are sorted by ${sortKey} ${sortOrder}`, () => {",
+									"    for (let i = 1; i < orders.length; i ++) {",
+									"        const prev = orders[i - 1][sortKey];",
+									"        const curr = orders[i][sortKey];",
+									"        const comparison = prev.localeCompare(curr);",
+									"",
+									"        if (sortOrder === 'ASC') {",
+									"            pm.expect(comparison).to.be.at.most(0);",
+									"        } else {",
+									"            pm.expect(comparison).to.be.at.least(0);",
+									"        }",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders?sortKey=name&sortOrder=DESC",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							],
+							"query": [
+								{
+									"key": "sortKey",
+									"value": "name"
+								},
+								{
+									"key": "sortOrder",
+									"value": "DESC"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const orders = pm.response.json();",
+									"pm.environment.set(\"orderId\", orders.id);",
+									"const Ajv = require('ajv');",
+									"const ajv = new Ajv({ allErrors: true });",
+									"const schema = {\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"},\"sku\":{\"type\":\"integer\"}}};",
+									"",
+									"pm.test('POST response matches schema', () => {",
+									"    const validate = ajv.compile(schema);",
+									"    const valid = validate(orders);",
+									"    pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;",
+									"})"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let start = 3;",
+									"let currentOrder = parseInt(pm.environment.get(\"orderCounter\") || start);",
+									"",
+									"pm.environment.set(\"orderCounter\", currentOrder + 1);",
+									"",
+									"let orderName = `order${currentOrder}`;",
+									"pm.environment.set(\"orderName\", orderName);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"{{orderName}}\",\r\n    \"sku\": {{$randomInt}}\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get order by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const orders = pm.response.json();",
+									"const Ajv = require('ajv');",
+									"const ajv = new Ajv({ allErrors: true });",
+									"const schema = {\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"},\"sku\":{\"type\":\"integer\"}}};",
+									"",
+									"pm.test('Schema is valid', () => {",
+									"    const validate = ajv.compile(schema);",
+									"    const valid = validate(orders);",
+									"    pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;",
+									"})",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{orderId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{orderId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const orders = pm.response.json();",
+									"const Ajv = require('ajv');",
+									"const ajv = new Ajv({ allErrors: true });",
+									"const schema = {\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"},\"sku\":{\"type\":\"integer\"}}};",
+									"",
+									"pm.environment.set(\"expectedName\", orders.name);",
+									"pm.environment.set(\"expectedSku\", orders.sku);",
+									"",
+									"pm.test(\"Schema is valid\", () => {",
+									"    const validate = ajv.compile(schema);",
+									"    const valid = validate(orders);",
+									"    pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Values are correct via GET\", (done) => {",
+									"  const url = pm.variables.replaceIn(\"{{baseUrl}}/orders/{{orderId}}\");",
+									"  const expectedName = pm.environment.get(\"expectedName\");",
+									"  const expectedSku = pm.environment.get(\"expectedSku\");",
+									"",
+									"  pm.sendRequest({ url, method: \"GET\" }, (_, res) => {",
+									"    const actual = res.json();",
+									"    pm.expect(res.json().name).to.eql(expectedName);",
+									"    pm.expect(actual.sku).to.eql(parseInt(expectedSku));",
+									"    done();",
+									"  });",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": {{orderId}},\r\n    \"name\": \"{{orderName}}\",\r\n    \"sku\": {{$randomInt}}\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove order by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const url = pm.variables.replaceIn(\"{{baseUrl}}/orders/{{orderId}}\");",
+									"",
+									"pm.test(\"Deleted item returns 404\", (done) => {",
+									"  pm.sendRequest({ url, method: \"GET\" }, (_, res) => {",
+									"    pm.expect(res.code).to.eql(404);",
+									"    done();",
+									"  });",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{orderId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{orderId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "List users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const users = pm.response.json();",
+									"const Ajv = require('ajv');",
+									"const ajv = new Ajv({ allErrors: true });",
+									"const schema = {\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"firstName\":{\"type\":\"string\"},\"lastName\":{\"type\":\"string\"},\"email\":{\"type\":\"string\"},\"dateOfBirth\":{\"type\":\"string\"},\"emailVerified\":{\"type\":\"boolean\"},\"signUpDate\":{\"type\":\"string\"},\"status\":{\"type\":\"string\"},\"level\":{\"type\":\"string\"}}};",
+									"",
+									"pm.test('Schema is valid', () => {",
+									"    const validate = ajv.compile(schema);",
+									"    users.forEach(u => {",
+									"        const valid = validate(u);",
+									"        pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;",
+									"    });",
+									"}); "
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List users pagination",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const users = pm.response.json();",
+									"const pageSize = Number(pm.request.url.query.get('pageSize'));",
+									"",
+									"pm.test('Users are an array', () => {",
+									"    pm.expect(users).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(`Returns max ${pageSize} user`, () => {",
+									"    pm.expect(users.length).to.be.at.most(pageSize);",
+									"});",
+									"",
+									"pm.test('Each user has a firstName', () => {",
+									"    users.forEach(o => {",
+									"        pm.expect(o).to.have.property('firstName');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users?page=1&pageSize=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List users sorting",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const users = pm.response.json();",
+									"const sortKey = pm.request.url.query.get('sortKey');",
+									"const sortOrder = pm.request.url.query.get('sortOrder');",
+									"",
+									"pm.test(`Users are sorted by ${sortKey} ${sortOrder}`, () => {",
+									"    for (let i = 1; i < users.length; i++) {",
+									"        const prevDate = new Date(users[i - 1].dateOfBirth);",
+									"        const currDate = new Date(users[i].dateOfBirth);",
+									"",
+									"        if (sortOrder === 'ASC') {",
+									"            pm.expect(prevDate.getTime()).to.be.at.most(currDate.getTime());",
+									"        } else {",
+									"            pm.expect(prevDate.getTime()).to.be.at.least(currDate.getTime());",
+									"        }",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users?sortKey=dateOfBirth&sortOrder=ASC",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							],
+							"query": [
+								{
+									"key": "sortKey",
+									"value": "dateOfBirth"
+								},
+								{
+									"key": "sortOrder",
+									"value": "ASC"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const users = pm.response.json();",
+									"pm.environment.set(\"userId\", users.id);",
+									"const Ajv = require('ajv');",
+									"const ajv = new Ajv({ allErrors: true });",
+									"const schema = {\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"firstName\":{\"type\":\"string\"},\"lastName\":{\"type\":\"string\"},\"email\":{\"type\":\"string\"},\"dateOfBirth\":{\"type\":\"string\"},\"emailVerified\":{\"type\":\"boolean\"},\"signUpDate\":{\"type\":\"string\"},\"status\":{\"type\":\"string\"},\"level\":{\"type\":\"string\"}}};",
+									"",
+									"pm.test('POST response matches schema', () => {",
+									"    const validate = ajv.compile(schema);",
+									"    const valid = validate(users);",
+									"    pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;",
+									"})"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstName\": \"{{$randomFirstName}}\",\r\n    \"lastName\": \"{{$randomLastName}}\",\r\n    \"email\": \"{{$randomEmail}}\",\r\n    \"dateOfBirth\": \"{{$randomDatePast}}\",\r\n    \"emailVerified\": {{$randomBoolean}},\r\n    \"signUpDate\": \"{{$randomDatePast}}\",\r\n    \"status\": \"{{$randomWord}}\",\r\n    \"level\": \"{{$randomNoun}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const users = pm.response.json();",
+									"const Ajv = require('ajv');",
+									"const ajv = new Ajv({ allErrors: true });",
+									"const schema = {\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"firstName\":{\"type\":\"string\"},\"lastName\":{\"type\":\"string\"},\"email\":{\"type\":\"string\"},\"dateOfBirth\":{\"type\":\"string\"},\"emailVerified\":{\"type\":\"boolean\"},\"signUpDate\":{\"type\":\"string\"},\"status\":{\"type\":\"string\"},\"level\":{\"type\":\"string\"}}};",
+									"",
+									"pm.test('Schema is valid', () => {",
+									"    const validate = ajv.compile(schema);",
+									"    const valid = validate(users);",
+									"    pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;",
+									"})"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"{{userId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const users = pm.response.json();",
+									"const Ajv = require('ajv');",
+									"const ajv = new Ajv({ allErrors: true });",
+									"const schema = {\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"firstName\":{\"type\":\"string\"},\"lastName\":{\"type\":\"string\"},\"email\":{\"type\":\"string\"},\"dateOfBirth\":{\"type\":\"string\"},\"emailVerified\":{\"type\":\"boolean\"},\"signUpDate\":{\"type\":\"string\"},\"status\":{\"type\":\"string\"},\"level\":{\"type\":\"string\"}}};",
+									"",
+									"pm.environment.set(\"expectedFirstName\", users.firstName);",
+									"pm.environment.set(\"expectedLastName\", users.lastName);",
+									"pm.environment.set(\"expectedEmail\", users.email);",
+									"pm.environment.set(\"expectedDateOfBirth\", users.dateOfBirth);",
+									"pm.environment.set(\"expectedEmailVerified\", users.emailVerified);",
+									"pm.environment.set(\"expectedSignUpDate\", users.signUpDate);",
+									"pm.environment.set(\"expectedStatus\", users.status);",
+									"pm.environment.set(\"expectedLevel\", users.level);",
+									"",
+									"pm.test(\"Schema is valid\", () => {",
+									"    const validate = ajv.compile(schema);",
+									"    const valid = validate(users);",
+									"    pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Values are correct via GET\", (done) => {",
+									"  const url = pm.variables.replaceIn(\"{{baseUrl}}/users/{{userId}}\");",
+									"  const expectedFirstName = pm.environment.get(\"expectedFirstName\");",
+									"  const expectedLastName = pm.environment.get(\"expectedLastName\");",
+									"  const expectedEmail = pm.environment.get(\"expectedEmail\");",
+									"  const expectedDateOfBirth = pm.environment.get(\"expectedDateOfBirth\");",
+									"  const expectedEmailVerified = pm.environment.get(\"expectedEmailVerified\");",
+									"  const expectedSignUpDate = pm.environment.get(\"expectedSignUpDate\");",
+									"  const expectedStatus = pm.environment.get(\"expectedStatus\");",
+									"  const expectedLevel = pm.environment.get(\"expectedLevel\");",
+									"",
+									"  pm.sendRequest({ url, method: \"GET\" }, (_, res) => {",
+									"    const actual = res.json();",
+									"    pm.expect(actual.firstName).to.eql(expectedFirstName);",
+									"    pm.expect(actual.lastName).to.eql(expectedLastName);",
+									"    pm.expect(actual.email).to.eql(expectedEmail);",
+									"    pm.expect(actual.dateOfBirth).to.eql(expectedDateOfBirth);",
+									"    pm.expect(actual.emailVerified).to.eql(expectedEmailVerified);",
+									"    pm.expect(actual.signUpDate).to.eql(expectedSignUpDate);",
+									"    pm.expect(actual.status).to.eql(expectedStatus);",
+									"    pm.expect(actual.level).to.eql(expectedLevel);",
+									"    done();",
+									"  });",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstName\": \"{{$randomFirstName}}\",\r\n    \"lastName\": \"{{$randomLastName}}\",\r\n    \"email\": \"{{$randomEmail}}\",\r\n    \"dateOfBirth\": \"{{$randomDatePast}}\",\r\n    \"emailVerified\": {{$randomBoolean}},\r\n    \"signUpDate\": \"{{$randomDatePast}}\",\r\n    \"status\": \"{{$randomWord}}\",\r\n    \"level\": \"{{$randomNoun}}\",\r\n    \"id\": {{userId}}\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove user by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const url = pm.variables.replaceIn(\"{{baseUrl}}/users/{{userId}}\");",
+									"",
+									"pm.test(\"Deleted item returns 404\", (done) => {",
+									"  pm.sendRequest({ url, method: \"GET\" }, (_, res) => {",
+									"    pm.expect(res.code).to.eql(404);",
+									"    done();",
+									"  });",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"{{userId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"let thisResponseTime = pm.response.responseTime;",
+					"let statusCode = pm.response.code;",
+					"let header = pm.response.headers;",
+					"",
+					"pm.test(\"Response time is less than 200ms\", () => {",
+					"    pm.expect(thisResponseTime).to.be.below(200);",
+					"});",
+					"",
+					"pm.test(\"Status code is 2XX\", () => {",
+					"    pm.expect(statusCode).to.be.within(200, 299);",
+					"});",
+					"",
+					"pm.test(\"Content-Type is present\", () => {",
+					"    pm.expect(header.has(\"Content-Type\")).to.be.true;",
+					"});",
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}
