@@ -1,5 +1,4 @@
 name: Run Newman Tests and Publish Allure Report
-
 on:
   workflow_dispatch:
   push:
@@ -39,7 +38,7 @@ jobs:
       run: |
         newman run store.collection.json \
           --reporters cli,allure \
-          --reporter-allure-export newman/allure-results
+          --reporter-allure-export allure-results
 
     - name: Generate Allure report with history
       uses: simple-elf/allure-report-action@master
