@@ -1,4 +1,4 @@
-name: Test-Build
+name: Run Newman Tests and Publish Allure Report
 on:
   push:
     branches:
