@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: 18
 
@@ -39,7 +39,7 @@ jobs:
       run: |
         newman run store.collection.json \
           --reporters cli,allure \
-          --reporter-allure-export newman/allure-results
+          --reporter-allure-export allure-results
 
     - name: Generate Allure report with history
       uses: simple-elf/allure-report-action@master
